@@ -42,8 +42,12 @@ def folder_creation(json_data):
         index = item.get("index")
 
         if title:
-            clean_title = "".join(c for c in title if c.isalnum()
-                                  or c in (' ', '.', '_')).rstrip()
+            invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|']
+            clean_title = title
+            for char in invalid_chars:
+                clean_title = clean_title.replace(char, ' ')
+
+            clean_title = " ".join(clean_title.split()).rstrip()
             folder_name = f"{index}. {clean_title}"
 
             folder_path = os.path.join(output_directory, folder_name)
