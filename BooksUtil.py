@@ -1,10 +1,12 @@
 import json
 import os
+import shutil
 import sys
 
 json_path = 'file_name&title.json'
 output_txt_file = 'output_raw_data.txt'
 output_directory = "outputs"
+books_source_directory = "Books"
 
 
 def json_processor():
@@ -13,49 +15,51 @@ def json_processor():
     with open(json_path, 'r', encoding='utf-8') as opened_file:
         json_data = json.load(opened_file)
 
+    # Sort the data by title
+    json_data.sort(key=lambda x: x.get('title', '').lower())
+    
+    indexed_data = []
+    for i, item in enumerate(json_data, 1):
+        new_item = {'index': i, 'title': item.get(
+            'title'), 'file_name': item.get('file_name')}
+        indexed_data.append(new_item)
+
     with open(output_txt_file, 'w', encoding='utf-8') as written_file:
-        json_string = json.dumps(json_data, indent=4, ensure_ascii=False)
+        json_string = json.dumps(
+            indexed_data, indent=4, ensure_ascii=False)
         written_file.write(json_string)
-    return json_data
+    return indexed_data
 
 
 def folder_creation(json_data):
-    main_output_path = output_directory
-    duplicate_output_path = os.path.join(main_output_path, "!Duplicates")
+    output_directory
 
-    if not os.path.exists(main_output_path):
-        os.makedirs(main_output_path)
-
-    if not os.path.exists(duplicate_output_path):
-        os.makedirs(duplicate_output_path)
-        print(
-            f"Created a dedicated folder for duplicates: {duplicate_output_path}")
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
 
     for item in json_data:
         title = item.get("title")
+        index = item.get("index")
 
         if title:
-            folder_name = "".join(c for c in title if c.isalnum()
+            clean_title = "".join(c for c in title if c.isalnum()
                                   or c in (' ', '.', '_')).rstrip()
+            folder_name = f"{index}. {clean_title}"
 
-            folder_path = os.path.join(main_output_path, folder_name)
+            folder_path = os.path.join(output_directory, folder_name)
 
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
                 print(f"Created folder: {folder_path}")
+
+            source_file = os.path.join(
+                books_source_directory, item.get("file_name"))
+            if os.path.exists(source_file):
+                shutil.copy(source_file, folder_path)
+                print(f"Copied '{item.get('file_name')}' to '{folder_path}'")
             else:
-                duplicate_folder_path = os.path.join(
-                    duplicate_output_path, folder_name)
-
-                counter = 1
-                while os.path.exists(duplicate_folder_path):
-                    duplicate_folder_path = os.path.join(
-                        duplicate_output_path, f"{folder_name}_{counter}")
-                    counter += 1
-
-                os.makedirs(duplicate_folder_path)
                 print(
-                    f"Folder '{folder_name}' already exists. New created in '!Duplicates' folder: {duplicate_folder_path}")
+                    f"Error: Source file not found - {source_file}")
 
 
 def main():
