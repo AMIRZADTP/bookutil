@@ -1,0 +1,13 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment folders
+venv/
+.venv/
+env/
+.env
+
+# Project Folders
+/Books
+/outputs/
