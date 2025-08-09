@@ -29,7 +29,7 @@ def process_book_data(file_path):
             book_list = json.load(opened_file)
     except FileNotFoundError:
         logging.error(f"Input file not found: {file_path}")
-        raise  # خطا را دوباره پرتاب می‌کنیم تا در main گرفته شود
+        raise
     except json.JSONDecodeError:
         logging.error(f"Could not decode JSON from: {file_path}")
         raise
