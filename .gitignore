@@ -15,8 +15,9 @@ env/
 # Ignore the directory for generated output files, such as reports or lists.
 /outputs/
 
-# ========================
-# Log files
-# ========================
+
 # Ignore application log files.
 app.log
+
+# Ignore your data
+file_name&title.json
