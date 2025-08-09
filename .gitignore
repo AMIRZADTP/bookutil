@@ -9,5 +9,14 @@ env/
 .env
 
 # Project Folders
-/Books
+# Using lowercase and a trailing slash for cross-platform compatibility and to ensure only directories are matched.
+/books/
+
+# Ignore the directory for generated output files, such as reports or lists.
 /outputs/
+
+# ========================
+# Log files
+# ========================
+# Ignore application log files.
+app.log

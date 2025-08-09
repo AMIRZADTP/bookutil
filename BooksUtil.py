@@ -2,81 +2,105 @@ import json
 import os
 import shutil
 import sys
+import logging
 
-json_path = 'file_name&title.json'
-output_txt_file = 'output_raw_data.txt'
-output_directory = "outputs"
-books_source_directory = "Books"
-
-
-def json_processor():
-    os.path.exists(json_path)
-
-    with open(json_path, 'r', encoding='utf-8') as opened_file:
-        json_data = json.load(opened_file)
-
-    json_data.sort(key=lambda x: x.get('title', '').lower())
-
-    indexed_data = []
-    for i, item in enumerate(json_data, 1):
-        new_item = {'index': i, 'title': item.get(
-            'title'), 'file_name': item.get('file_name')}
-        indexed_data.append(new_item)
-
-    with open(output_txt_file, 'w', encoding='utf-8') as written_file:
-        json_string = json.dumps(
-            indexed_data, indent=4, ensure_ascii=False)
-        written_file.write(json_string)
-    return indexed_data
+JSON_PATH = 'file_name&title.json'
+OUTPUT_LIST_FILENAME = 'book_list.txt'
+OUTPUT_DIRECTORY = "outputs"
+BOOKS_SOURCE_DIRECTORY = "books"
+LOG_FILE = 'app.log'
 
 
-def folder_creation(json_data):
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(LOG_FILE, 'w', 'utf-8'),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
 
-    for item in json_data:
-        title = item.get("title")
-        index = item.get("index")
 
-        if title:
-            invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|']
-            clean_title = title
-            for char in invalid_chars:
-                clean_title = clean_title.replace(char, ' ')
+def process_book_data(file_path):
+    logging.info(f"Reading and processing book data from: {file_path}")
+    try:
+        with open(file_path, 'r', encoding='utf-8') as opened_file:
+            book_list = json.load(opened_file)
+    except FileNotFoundError:
+        logging.error(f"Input file not found: {file_path}")
+        raise  # خطا را دوباره پرتاب می‌کنیم تا در main گرفته شود
+    except json.JSONDecodeError:
+        logging.error(f"Could not decode JSON from: {file_path}")
+        raise
 
-            clean_title = " ".join(clean_title.split()).rstrip()
-            folder_name = f"{index}. {clean_title}"
+    book_list.sort(key=lambda x: x.get('title', '').lower())
+    logging.info("Book list sorted successfully.")
 
-            folder_path = os.path.join(output_directory, folder_name)
+    indexed_book_list = []
+    for i, item in enumerate(book_list, 1):
+        new_item = {
+            'index': i,
+            'title': item.get('title'),
+            'file_name': item.get('file_name')
+        }
+        indexed_book_list.append(new_item)
+    logging.info(f"Indexing complete. {len(indexed_book_list)} books indexed.")
+    return indexed_book_list
 
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-                print(f"Created folder: {folder_path}")
 
-            source_file = os.path.join(
-                books_source_directory, item.get("file_name"))
+def create_output_files(book_list):
+    if not os.path.exists(OUTPUT_DIRECTORY):
+        os.makedirs(OUTPUT_DIRECTORY)
+        logging.info(f"Output directory created: {OUTPUT_DIRECTORY}")
+
+    for book in book_list:
+        title = book.get("title", "Untitled")
+        index = book.get("index")
+        file_name = book.get("file_name")
+
+        invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|']
+        clean_title = title
+        for char in invalid_chars:
+            clean_title = clean_title.replace(char, ' ')
+        clean_title = " ".join(clean_title.split()).strip()
+
+        folder_name = f"{index}. {clean_title}"
+        folder_path = os.path.join(OUTPUT_DIRECTORY, folder_name)
+
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        if file_name:
+            source_file = os.path.join(BOOKS_SOURCE_DIRECTORY, file_name)
             if os.path.exists(source_file):
                 shutil.copy(source_file, folder_path)
-                print(f"Copied '{item.get('file_name')}' to '{folder_path}'")
+                logging.info(f"Copied '{file_name}' to '{folder_path}'")
             else:
-                print(
-                    f"Error: Source file not found - {source_file}")
+                logging.warning(
+                    f"Source file not found for book '{title}': {source_file}")
+
+    final_list_path = os.path.join(OUTPUT_DIRECTORY, OUTPUT_LIST_FILENAME)
+    logging.info(f"Creating final book list at: {final_list_path}")
+    with open(final_list_path, 'w', encoding='utf-8') as written_file:
+        json_string = json.dumps(book_list, indent=4, ensure_ascii=False)
+        written_file.write(json_string)
+    logging.info("Final book list file created successfully.")
 
 
 def main():
     if sys.stdout.encoding != 'utf-8':
         sys.stdout.reconfigure(encoding='utf-8')
 
+    setup_logging()
+    logging.info("Starting the book processing script.")
     try:
-        processed_json = json_processor()
-        folder_creation(processed_json)
-    except FileNotFoundError:
-        print(f"Error: The file '{json_path}' was not found.")
-    except json.JSONDecodeError:
-        print(
-            f"Error: Could not decode JSON from '{json_path}'. Ensure it's a valid JSON file.")
+        indexed_books = process_book_data(JSON_PATH)
+        create_output_files(indexed_books)
+        logging.info("Script finished successfully.")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        logging.critical(
+            f"A critical error occurred, and the program had to stop: {e}")
 
 
 if __name__ == "__main__":
