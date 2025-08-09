@@ -15,9 +15,8 @@ def json_processor():
     with open(json_path, 'r', encoding='utf-8') as opened_file:
         json_data = json.load(opened_file)
 
-    # Sort the data by title
     json_data.sort(key=lambda x: x.get('title', '').lower())
-    
+
     indexed_data = []
     for i, item in enumerate(json_data, 1):
         new_item = {'index': i, 'title': item.get(
@@ -32,8 +31,6 @@ def json_processor():
 
 
 def folder_creation(json_data):
-    output_directory
-
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -42,8 +39,12 @@ def folder_creation(json_data):
         index = item.get("index")
 
         if title:
-            clean_title = "".join(c for c in title if c.isalnum()
-                                  or c in (' ', '.', '_')).rstrip()
+            invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|']
+            clean_title = title
+            for char in invalid_chars:
+                clean_title = clean_title.replace(char, ' ')
+
+            clean_title = " ".join(clean_title.split()).rstrip()
             folder_name = f"{index}. {clean_title}"
 
             folder_path = os.path.join(output_directory, folder_name)
